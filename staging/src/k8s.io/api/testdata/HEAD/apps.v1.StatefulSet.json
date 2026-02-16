@@ -1850,7 +1850,12 @@
         "hostnameOverride": "hostnameOverrideValue",
         "schedulingGroup": {
           "podGroupName": "podGroupNameValue"
-        }
+        },
+        "evictionInterceptors": [
+          {
+            "name": "nameValue"
+          }
+        ]
       }
     },
     "volumeClaimTemplates": [
