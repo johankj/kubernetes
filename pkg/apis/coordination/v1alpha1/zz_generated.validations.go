@@ -66,7 +66,7 @@ func Validate_EvictionRequest(ctx context.Context, op operation.Operation, fldPa
 			}
 			// call field-attached validations
 			func() { // cohort name
-				errs = append(errs, validate.Subfield(ctx, op, fldPath, obj, oldObj, "name", func(o *v1.ObjectMeta) *string { return &o.Name }, validate.DirectEqualPtr, validate.UUID).MarkAlpha()...)
+				errs = append(errs, validate.Subfield(ctx, op, fldPath, obj, oldObj, "name", func(o *v1.ObjectMeta) *string { return &o.Name }, validate.DirectEqualPtr, validate.UUID)...)
 			}()
 			func() { // cohort generateName
 				earlyReturn := false
@@ -127,7 +127,7 @@ func Validate_EvictionRequestSpec(ctx context.Context, op operation.Operation, f
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.Immutable(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.Immutable(ctx, op, fldPath, obj, oldObj).MarkBeta(); len(e) != 0 {
 				errs = append(errs, e...)
 				earlyReturn = true
 			}
@@ -150,18 +150,18 @@ func Validate_EvictionRequestSpec(ctx context.Context, op operation.Operation, f
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalSlice(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.MaxItems(ctx, op, fldPath, obj, oldObj, 100); len(e) != 0 {
+				errs = append(errs, e...)
 				earlyReturn = true
 			}
-			if e := validate.MaxItems(ctx, op, fldPath, obj, oldObj, 100).MarkAlpha(); len(e) != 0 {
-				errs = append(errs, e...)
+			if e := validate.OptionalSlice(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
 			if earlyReturn {
 				return // do not proceed
 			}
 			// lists with map semantics require unique keys
-			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a coordinationv1alpha1.Requester, b coordinationv1alpha1.Requester) bool { return a.Name == b.Name }).MarkAlpha()...)
+			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a coordinationv1alpha1.Requester, b coordinationv1alpha1.Requester) bool { return a.Name == b.Name })...)
 			// iterate the list and call the type's validation function
 			errs = append(errs, validate.EachSliceVal(ctx, op, fldPath, obj, oldObj, func(a coordinationv1alpha1.Requester, b coordinationv1alpha1.Requester) bool { return a.Name == b.Name }, validate.DirectEqual, Validate_Requester)...)
 			return
@@ -184,18 +184,18 @@ func Validate_EvictionRequestStatus(ctx context.Context, op operation.Operation,
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalSlice(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.MaxItems(ctx, op, fldPath, obj, oldObj, 1000); len(e) != 0 {
+				errs = append(errs, e...)
 				earlyReturn = true
 			}
-			if e := validate.MaxItems(ctx, op, fldPath, obj, oldObj, 1000).MarkAlpha(); len(e) != 0 {
-				errs = append(errs, e...)
+			if e := validate.OptionalSlice(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
 			if earlyReturn {
 				return // do not proceed
 			}
 			// lists with map semantics require unique keys
-			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a v1.Condition, b v1.Condition) bool { return a.Type == b.Type }).MarkAlpha()...)
+			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a v1.Condition, b v1.Condition) bool { return a.Type == b.Type })...)
 			return
 		}(fldPath.Child("conditions"), obj.Conditions, safe.Field(oldObj, func(oldObj *coordinationv1alpha1.EvictionRequestStatus) []v1.Condition { return oldObj.Conditions }), oldObj != nil)...)
 
@@ -208,13 +208,13 @@ func Validate_EvictionRequestStatus(ctx context.Context, op operation.Operation,
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalValue(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.OptionalValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
 			if earlyReturn {
 				return // do not proceed
 			}
-			errs = append(errs, validate.Minimum(ctx, op, fldPath, obj, oldObj, 0).MarkAlpha()...)
+			errs = append(errs, validate.Minimum(ctx, op, fldPath, obj, oldObj, 0)...)
 			return
 		}(fldPath.Child("observedGeneration"), &obj.ObservedGeneration, safe.Field(oldObj, func(oldObj *coordinationv1alpha1.EvictionRequestStatus) *int64 { return &oldObj.ObservedGeneration }), oldObj != nil)...)
 
@@ -227,11 +227,11 @@ func Validate_EvictionRequestStatus(ctx context.Context, op operation.Operation,
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalSlice(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.MaxItems(ctx, op, fldPath, obj, oldObj, 16); len(e) != 0 {
+				errs = append(errs, e...)
 				earlyReturn = true
 			}
-			if e := validate.MaxItems(ctx, op, fldPath, obj, oldObj, 16).MarkAlpha(); len(e) != 0 {
-				errs = append(errs, e...)
+			if e := validate.OptionalSlice(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
 			if earlyReturn {
@@ -240,7 +240,7 @@ func Validate_EvictionRequestStatus(ctx context.Context, op operation.Operation,
 			// lists with map semantics require unique keys
 			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a coordinationv1alpha1.TargetInterceptor, b coordinationv1alpha1.TargetInterceptor) bool {
 				return a.Name == b.Name
-			}).MarkAlpha()...)
+			})...)
 			// iterate the list and call the type's validation function
 			errs = append(errs, validate.EachSliceVal(ctx, op, fldPath, obj, oldObj, func(a coordinationv1alpha1.TargetInterceptor, b coordinationv1alpha1.TargetInterceptor) bool {
 				return a.Name == b.Name
@@ -259,18 +259,18 @@ func Validate_EvictionRequestStatus(ctx context.Context, op operation.Operation,
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalSlice(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.MaxItems(ctx, op, fldPath, obj, oldObj, 1); len(e) != 0 {
+				errs = append(errs, e...)
 				earlyReturn = true
 			}
-			if e := validate.MaxItems(ctx, op, fldPath, obj, oldObj, 1).MarkAlpha(); len(e) != 0 {
-				errs = append(errs, e...)
+			if e := validate.OptionalSlice(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
 			if earlyReturn {
 				return // do not proceed
 			}
 			// lists with set semantics require unique values
-			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, validate.DirectEqual).MarkAlpha()...)
+			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, validate.DirectEqual)...)
 			return
 		}(fldPath.Child("activeInterceptors"), obj.ActiveInterceptors, safe.Field(oldObj, func(oldObj *coordinationv1alpha1.EvictionRequestStatus) []string { return oldObj.ActiveInterceptors }), oldObj != nil)...)
 
@@ -283,18 +283,18 @@ func Validate_EvictionRequestStatus(ctx context.Context, op operation.Operation,
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalSlice(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.MaxItems(ctx, op, fldPath, obj, oldObj, 16); len(e) != 0 {
+				errs = append(errs, e...)
 				earlyReturn = true
 			}
-			if e := validate.MaxItems(ctx, op, fldPath, obj, oldObj, 16).MarkAlpha(); len(e) != 0 {
-				errs = append(errs, e...)
+			if e := validate.OptionalSlice(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
 			if earlyReturn {
 				return // do not proceed
 			}
 			// lists with set semantics require unique values
-			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, validate.DirectEqual).MarkAlpha()...)
+			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, validate.DirectEqual)...)
 			return
 		}(fldPath.Child("processedInterceptors"), obj.ProcessedInterceptors, safe.Field(oldObj, func(oldObj *coordinationv1alpha1.EvictionRequestStatus) []string { return oldObj.ProcessedInterceptors }), oldObj != nil)...)
 
@@ -307,11 +307,11 @@ func Validate_EvictionRequestStatus(ctx context.Context, op operation.Operation,
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalSlice(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.MaxItems(ctx, op, fldPath, obj, oldObj, 16); len(e) != 0 {
+				errs = append(errs, e...)
 				earlyReturn = true
 			}
-			if e := validate.MaxItems(ctx, op, fldPath, obj, oldObj, 16).MarkAlpha(); len(e) != 0 {
-				errs = append(errs, e...)
+			if e := validate.OptionalSlice(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
 			if earlyReturn {
@@ -320,7 +320,7 @@ func Validate_EvictionRequestStatus(ctx context.Context, op operation.Operation,
 			// lists with map semantics require unique keys
 			errs = append(errs, validate.Unique(ctx, op, fldPath, obj, oldObj, func(a coordinationv1alpha1.InterceptorStatus, b coordinationv1alpha1.InterceptorStatus) bool {
 				return a.Name == b.Name
-			}).MarkAlpha()...)
+			})...)
 			// iterate the list and call the type's validation function
 			errs = append(errs, validate.EachSliceVal(ctx, op, fldPath, obj, oldObj, func(a coordinationv1alpha1.InterceptorStatus, b coordinationv1alpha1.InterceptorStatus) bool {
 				return a.Name == b.Name
@@ -343,7 +343,7 @@ func Validate_EvictionTarget(ctx context.Context, op operation.Operation, fldPat
 			return false
 		}
 		return obj.Pod != nil
-	}).MarkAlpha()...)
+	})...)
 
 	// field coordinationv1alpha1.EvictionTarget.Pod
 	errs = append(errs,
@@ -354,14 +354,14 @@ func Validate_EvictionTarget(ctx context.Context, op operation.Operation, fldPat
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalPointer(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.OptionalPointer(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
 			if earlyReturn {
 				return // do not proceed
 			}
 			func() { // cohort name
-				errs = append(errs, validate.Subfield(ctx, op, fldPath, obj, oldObj, "name", func(o *coordinationv1alpha1.LocalTargetReference) *string { return &o.Name }, validate.DirectEqualPtr, validate.LongName).MarkAlpha()...)
+				errs = append(errs, validate.Subfield(ctx, op, fldPath, obj, oldObj, "name", func(o *coordinationv1alpha1.LocalTargetReference) *string { return &o.Name }, validate.DirectEqualPtr, validate.LongName)...)
 			}()
 			// call the type's validation function
 			errs = append(errs, Validate_LocalTargetReference(ctx, op, fldPath, obj, oldObj)...)
@@ -385,7 +385,7 @@ func Validate_InterceptorStatus(ctx context.Context, op operation.Operation, fld
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.RequiredValue(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.RequiredValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				errs = append(errs, e...)
 				earlyReturn = true
 			}
@@ -404,10 +404,10 @@ func Validate_InterceptorStatus(ctx context.Context, op operation.Operation, fld
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalPointer(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.OptionalPointer(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
-			if e := validate.UpdatePointer(ctx, op, fldPath, obj, oldObj, validate.NoUnset, validate.NoModify).MarkAlpha(); len(e) != 0 {
+			if e := validate.UpdatePointer(ctx, op, fldPath, obj, oldObj, validate.NoUnset, validate.NoModify).MarkBeta(); len(e) != 0 {
 				errs = append(errs, e...)
 				earlyReturn = true
 			}
@@ -426,7 +426,7 @@ func Validate_InterceptorStatus(ctx context.Context, op operation.Operation, fld
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalPointer(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.OptionalPointer(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
 			if earlyReturn {
@@ -444,7 +444,7 @@ func Validate_InterceptorStatus(ctx context.Context, op operation.Operation, fld
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalPointer(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.OptionalPointer(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
 			if earlyReturn {
@@ -462,10 +462,10 @@ func Validate_InterceptorStatus(ctx context.Context, op operation.Operation, fld
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalPointer(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.OptionalPointer(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
-			if e := validate.UpdatePointer(ctx, op, fldPath, obj, oldObj, validate.NoUnset, validate.NoModify).MarkAlpha(); len(e) != 0 {
+			if e := validate.UpdatePointer(ctx, op, fldPath, obj, oldObj, validate.NoUnset, validate.NoModify).MarkBeta(); len(e) != 0 {
 				errs = append(errs, e...)
 				earlyReturn = true
 			}
@@ -484,13 +484,13 @@ func Validate_InterceptorStatus(ctx context.Context, op operation.Operation, fld
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalValue(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.OptionalValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
 			if earlyReturn {
 				return // do not proceed
 			}
-			errs = append(errs, validate.MaxLength(ctx, op, fldPath, obj, oldObj, 4000).MarkAlpha()...)
+			errs = append(errs, validate.MaxLength(ctx, op, fldPath, obj, oldObj, 4000).MarkBeta()...)
 			return
 		}(fldPath.Child("message"), &obj.Message, safe.Field(oldObj, func(oldObj *coordinationv1alpha1.InterceptorStatus) *string { return &oldObj.Message }), oldObj != nil)...)
 
@@ -509,7 +509,7 @@ func Validate_LocalTargetReference(ctx context.Context, op operation.Operation, 
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.RequiredValue(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.RequiredValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				errs = append(errs, e...)
 				earlyReturn = true
 			}
@@ -528,14 +528,14 @@ func Validate_LocalTargetReference(ctx context.Context, op operation.Operation, 
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.RequiredValue(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.RequiredValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				errs = append(errs, e...)
 				earlyReturn = true
 			}
 			if earlyReturn {
 				return // do not proceed
 			}
-			errs = append(errs, validate.UUID(ctx, op, fldPath, obj, oldObj).MarkAlpha()...)
+			errs = append(errs, validate.UUID(ctx, op, fldPath, obj, oldObj)...)
 			return
 		}(fldPath.Child("uid"), &obj.UID, safe.Field(oldObj, func(oldObj *coordinationv1alpha1.LocalTargetReference) *types.UID { return &oldObj.UID }), oldObj != nil)...)
 
@@ -554,7 +554,7 @@ func Validate_Requester(ctx context.Context, op operation.Operation, fldPath *fi
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.RequiredValue(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.RequiredValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				errs = append(errs, e...)
 				earlyReturn = true
 			}
@@ -579,7 +579,7 @@ func Validate_TargetInterceptor(ctx context.Context, op operation.Operation, fld
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.RequiredValue(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.RequiredValue(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				errs = append(errs, e...)
 				earlyReturn = true
 			}

@@ -61,7 +61,7 @@ type EvictionRequest struct {
 	// The labels of the eviction request object are synchronized with .metadata.labels of the
 	// eviction request's target. The labels of the target have a preference.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:subfield(name)=+k8s:format=k8s-uuid
+	// +k8s:subfield(name)=+k8s:format=k8s-uuid
 	// +k8s:alpha(since: "1.36")=+k8s:subfield(generateName)=+k8s:forbidden
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
@@ -83,7 +83,7 @@ type EvictionRequestSpec struct {
 	// Target UID must be the same as the EvictionRequest's .metadata.name.
 	// This field is required and immutable.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:immutable
+	// +k8s:beta(since: "1.36")=+k8s:immutable
 	Target EvictionTarget `json:"target" protobuf:"bytes,1,opt,name=target"`
 
 	// requesters allow you to identify entities, that requested the eviction of the target.
@@ -100,10 +100,10 @@ type EvictionRequestSpec struct {
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=name
-	// +k8s:alpha(since: "1.36")=+k8s:optional
-	// +k8s:alpha(since: "1.36")=+k8s:listType=map
-	// +k8s:alpha(since: "1.36")=+k8s:listMapKey=name
-	// +k8s:alpha(since: "1.36")=+k8s:maxItems=100
+	// +k8s:optional
+	// +k8s:listType=map
+	// +k8s:listMapKey=name
+	// +k8s:maxItems=100
 	Requesters []Requester `json:"requesters,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=requesters"`
 }
 
@@ -113,10 +113,10 @@ type EvictionTarget struct {
 	// pod references a pod that is subject to eviction/termination.
 	// Pods that are part of a PodGroup (.spec.schedulingGroup is set) are not supported.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:optional
 	// +oneOf=TargetSelection
-	// +k8s:alpha(since: "1.36")=+k8s:unionMember
-	// +k8s:alpha(since: "1.36")=+k8s:subfield(name)=+k8s:format=k8s-long-name
+	// +k8s:unionMember
+	// +k8s:subfield(name)=+k8s:format=k8s-long-name
 	Pod *LocalTargetReference `json:"pod,omitempty" protobuf:"bytes,1,opt,name=pod"`
 }
 
@@ -125,14 +125,14 @@ type LocalTargetReference struct {
 	// name of the target.
 	// This field is required.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:required
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// uid of the target.
 	// It can be found in .spec.metadata.uid of the target and is a lowercase UUID in 8-4-4-4-12 format.
 	// This field is required.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
-	// +k8s:alpha(since: "1.36")=+k8s:format=k8s-uuid
+	// +k8s:required
+	// +k8s:format=k8s-uuid
 	UID apimachinerytypes.UID `json:"uid" protobuf:"bytes,2,opt,name=uid,casttype=k8s.io/kubernetes/pkg/types.UID"`
 }
 
@@ -146,7 +146,7 @@ type Requester struct {
 	// This field must be unique for each requester.
 	// This field is required.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:required
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 }
 
@@ -167,18 +167,18 @@ type EvictionRequestStatus struct {
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=type
-	// +k8s:alpha(since: "1.36")=+k8s:optional
-	// +k8s:alpha(since: "1.36")=+k8s:listType=map
-	// +k8s:alpha(since: "1.36")=+k8s:listMapKey=type
-	// +k8s:alpha(since: "1.36")=+k8s:maxItems=1000
+	// +k8s:optional
+	// +k8s:listType=map
+	// +k8s:listMapKey=type
+	// +k8s:maxItems=1000
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 
 	// observedGeneration is EvictionRequest's .metadata.generation observed by the eviction request controller.
 	// The observed generation value cannot be negative and can only be incremented.
 	// This field is managed by Kubernetes.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:optional
-	// +k8s:alpha(since: "1.36")=+k8s:minimum=0
+	// +k8s:optional
+	// +k8s:minimum=0
 	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,2,opt,name=observedGeneration"`
 
 	// targetInterceptors reference interceptors that should eventually respond to this eviction
@@ -203,10 +203,10 @@ type EvictionRequestStatus struct {
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=name
-	// +k8s:alpha(since: "1.36")=+k8s:optional
-	// +k8s:alpha(since: "1.36")=+k8s:listType=map
-	// +k8s:alpha(since: "1.36")=+k8s:listMapKey=name
-	// +k8s:alpha(since: "1.36")=+k8s:maxItems=16
+	// +k8s:optional
+	// +k8s:listType=map
+	// +k8s:listMapKey=name
+	// +k8s:maxItems=16
 	TargetInterceptors []TargetInterceptor `json:"targetInterceptors,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,3,rep,name=targetInterceptors"`
 
 	// activeInterceptors store a list of interceptors that should currently interact with the
@@ -220,9 +220,9 @@ type EvictionRequestStatus struct {
 	// This field is managed by Kubernetes.
 	// +optional
 	// +listType=atomic
-	// +k8s:alpha(since: "1.36")=+k8s:optional
-	// +k8s:alpha(since: "1.36")=+k8s:listType=set
-	// +k8s:alpha(since: "1.36")=+k8s:maxItems=1
+	// +k8s:optional
+	// +k8s:listType=set
+	// +k8s:maxItems=1
 	ActiveInterceptors []string `json:"activeInterceptors" protobuf:"bytes,4,opt,name=activeInterceptors"`
 
 	// processedInterceptors store a list of interceptors that have previously been selected
@@ -233,9 +233,9 @@ type EvictionRequestStatus struct {
 	// This field is managed by Kubernetes.
 	// +optional
 	// +listType=atomic
-	// +k8s:alpha(since: "1.36")=+k8s:optional
-	// +k8s:alpha(since: "1.36")=+k8s:listType=set
-	// +k8s:alpha(since: "1.36")=+k8s:maxItems=16
+	// +k8s:optional
+	// +k8s:listType=set
+	// +k8s:maxItems=16
 	ProcessedInterceptors []string `json:"processedInterceptors,omitempty" protobuf:"bytes,5,opt,name=processedInterceptors"`
 
 	// interceptors represents the eviction process status of each declared interceptor. Only
@@ -251,10 +251,10 @@ type EvictionRequestStatus struct {
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=name
-	// +k8s:alpha(since: "1.36")=+k8s:optional
-	// +k8s:alpha(since: "1.36")=+k8s:listType=map
-	// +k8s:alpha(since: "1.36")=+k8s:listMapKey=name
-	// +k8s:alpha(since: "1.36")=+k8s:maxItems=16
+	// +k8s:optional
+	// +k8s:listType=map
+	// +k8s:listMapKey=name
+	// +k8s:maxItems=16
 	Interceptors []InterceptorStatus `json:"interceptors,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,6,rep,name=interceptors"`
 }
 
@@ -308,7 +308,7 @@ type TargetInterceptor struct {
 	// This field must be unique for each interceptor.
 	// This field is required.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:required
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 }
 
@@ -321,7 +321,7 @@ type InterceptorStatus struct {
 	// This field is initialized by Kubernetes and must be unique for each interceptor.
 	// This field is required.
 	// +required
-	// +k8s:alpha(since: "1.36")=+k8s:required
+	// +k8s:required
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// startTime tracks the time at which this interceptor was designated as active and should start
@@ -330,9 +330,9 @@ type InterceptorStatus struct {
 	// This field is initialized by Kubernetes when this interceptor becomes active.
 	// This field becomes immutable once set.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:optional
-	// +k8s:alpha(since: "1.36")=+k8s:update=NoModify
-	// +k8s:alpha(since: "1.36")=+k8s:update=NoUnset
+	// +k8s:optional
+	// +k8s:beta(since: "1.36")=+k8s:update=NoModify
+	// +k8s:beta(since: "1.36")=+k8s:update=NoUnset
 	StartTime *metav1.Time `json:"startTime,omitempty" protobuf:"bytes,2,opt,name=startTime"`
 
 	// heartbeatTime is the last time at which the eviction process was reported to be in progress
@@ -341,7 +341,7 @@ type InterceptorStatus struct {
 	// Interceptors should avoid heartbeats more frequent than 20 seconds to avoid overloading the
 	// control-plane.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:optional
 	HeartbeatTime *metav1.Time `json:"heartbeatTime,omitempty" protobuf:"bytes,3,opt,name=heartbeatTime"`
 
 	// expectedCompletionTime is the time at which the eviction process step is expected to end for the
@@ -349,7 +349,7 @@ type InterceptorStatus struct {
 	// The time cannot be set to the past.
 	// May be omitted if no estimate can be made.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:optional
+	// +k8s:optional
 	ExpectedCompletionTime *metav1.Time `json:"expectedCompletionTime,omitempty" protobuf:"bytes,4,opt,name=expectedCompletionTime"`
 
 	// completionTime tracks the time at which the Interceptor stopped processing the eviction request.
@@ -358,17 +358,17 @@ type InterceptorStatus struct {
 	// It should reflect the present time when set.
 	// This field becomes immutable once set.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:optional
-	// +k8s:alpha(since: "1.36")=+k8s:update=NoModify
-	// +k8s:alpha(since: "1.36")=+k8s:update=NoUnset
+	// +k8s:optional
+	// +k8s:beta(since: "1.36")=+k8s:update=NoModify
+	// +k8s:beta(since: "1.36")=+k8s:update=NoUnset
 	CompletionTime *metav1.Time `json:"completionTime,omitempty" protobuf:"bytes,5,opt,name=completionTime"`
 
 	// message provides human-readable details about the state of the interceptor and the eviction
 	// process.
 	// Maximum length is 4000 characters. The string is truncated if it exceeds this limit.
 	// +optional
-	// +k8s:alpha(since: "1.36")=+k8s:optional
-	// +k8s:alpha(since: "1.36")=+k8s:maxLength=4000
+	// +k8s:optional
+	// +k8s:beta(since: "1.36")=+k8s:maxLength=4000
 	Message string `json:"message,omitempty" protobuf:"bytes,6,opt,name=message"`
 }
 

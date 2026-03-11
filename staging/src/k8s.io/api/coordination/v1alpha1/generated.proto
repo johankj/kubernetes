@@ -52,7 +52,7 @@ message EvictionRequest {
   // The labels of the eviction request object are synchronized with .metadata.labels of the
   // eviction request's target. The labels of the target have a preference.
   // +optional
-  // +k8s:alpha(since: "1.36")=+k8s:subfield(name)=+k8s:format=k8s-uuid
+  // +k8s:subfield(name)=+k8s:format=k8s-uuid
   // +k8s:alpha(since: "1.36")=+k8s:subfield(generateName)=+k8s:forbidden
   optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
@@ -85,7 +85,7 @@ message EvictionRequestSpec {
   // Target UID must be the same as the EvictionRequest's .metadata.name.
   // This field is required and immutable.
   // +required
-  // +k8s:alpha(since: "1.36")=+k8s:immutable
+  // +k8s:beta(since: "1.36")=+k8s:immutable
   optional EvictionTarget target = 1;
 
   // requesters allow you to identify entities, that requested the eviction of the target.
@@ -102,10 +102,10 @@ message EvictionRequestSpec {
   // +patchStrategy=merge
   // +listType=map
   // +listMapKey=name
-  // +k8s:alpha(since: "1.36")=+k8s:optional
-  // +k8s:alpha(since: "1.36")=+k8s:listType=map
-  // +k8s:alpha(since: "1.36")=+k8s:listMapKey=name
-  // +k8s:alpha(since: "1.36")=+k8s:maxItems=100
+  // +k8s:optional
+  // +k8s:listType=map
+  // +k8s:listMapKey=name
+  // +k8s:maxItems=100
   repeated Requester requesters = 2;
 }
 
@@ -126,18 +126,18 @@ message EvictionRequestStatus {
   // +patchStrategy=merge
   // +listType=map
   // +listMapKey=type
-  // +k8s:alpha(since: "1.36")=+k8s:optional
-  // +k8s:alpha(since: "1.36")=+k8s:listType=map
-  // +k8s:alpha(since: "1.36")=+k8s:listMapKey=type
-  // +k8s:alpha(since: "1.36")=+k8s:maxItems=1000
+  // +k8s:optional
+  // +k8s:listType=map
+  // +k8s:listMapKey=type
+  // +k8s:maxItems=1000
   repeated .k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 1;
 
   // observedGeneration is EvictionRequest's .metadata.generation observed by the eviction request controller.
   // The observed generation value cannot be negative and can only be incremented.
   // This field is managed by Kubernetes.
   // +optional
-  // +k8s:alpha(since: "1.36")=+k8s:optional
-  // +k8s:alpha(since: "1.36")=+k8s:minimum=0
+  // +k8s:optional
+  // +k8s:minimum=0
   optional int64 observedGeneration = 2;
 
   // targetInterceptors reference interceptors that should eventually respond to this eviction
@@ -162,10 +162,10 @@ message EvictionRequestStatus {
   // +patchStrategy=merge
   // +listType=map
   // +listMapKey=name
-  // +k8s:alpha(since: "1.36")=+k8s:optional
-  // +k8s:alpha(since: "1.36")=+k8s:listType=map
-  // +k8s:alpha(since: "1.36")=+k8s:listMapKey=name
-  // +k8s:alpha(since: "1.36")=+k8s:maxItems=16
+  // +k8s:optional
+  // +k8s:listType=map
+  // +k8s:listMapKey=name
+  // +k8s:maxItems=16
   repeated TargetInterceptor targetInterceptors = 3;
 
   // activeInterceptors store a list of interceptors that should currently interact with the
@@ -179,9 +179,9 @@ message EvictionRequestStatus {
   // This field is managed by Kubernetes.
   // +optional
   // +listType=atomic
-  // +k8s:alpha(since: "1.36")=+k8s:optional
-  // +k8s:alpha(since: "1.36")=+k8s:listType=set
-  // +k8s:alpha(since: "1.36")=+k8s:maxItems=1
+  // +k8s:optional
+  // +k8s:listType=set
+  // +k8s:maxItems=1
   repeated string activeInterceptors = 4;
 
   // processedInterceptors store a list of interceptors that have previously been selected
@@ -192,9 +192,9 @@ message EvictionRequestStatus {
   // This field is managed by Kubernetes.
   // +optional
   // +listType=atomic
-  // +k8s:alpha(since: "1.36")=+k8s:optional
-  // +k8s:alpha(since: "1.36")=+k8s:listType=set
-  // +k8s:alpha(since: "1.36")=+k8s:maxItems=16
+  // +k8s:optional
+  // +k8s:listType=set
+  // +k8s:maxItems=16
   repeated string processedInterceptors = 5;
 
   // interceptors represents the eviction process status of each declared interceptor. Only
@@ -210,10 +210,10 @@ message EvictionRequestStatus {
   // +patchStrategy=merge
   // +listType=map
   // +listMapKey=name
-  // +k8s:alpha(since: "1.36")=+k8s:optional
-  // +k8s:alpha(since: "1.36")=+k8s:listType=map
-  // +k8s:alpha(since: "1.36")=+k8s:listMapKey=name
-  // +k8s:alpha(since: "1.36")=+k8s:maxItems=16
+  // +k8s:optional
+  // +k8s:listType=map
+  // +k8s:listMapKey=name
+  // +k8s:maxItems=16
   repeated InterceptorStatus interceptors = 6;
 }
 
@@ -223,10 +223,10 @@ message EvictionTarget {
   // pod references a pod that is subject to eviction/termination.
   // Pods that are part of a PodGroup (.spec.schedulingGroup is set) are not supported.
   // +optional
-  // +k8s:alpha(since: "1.36")=+k8s:optional
+  // +k8s:optional
   // +oneOf=TargetSelection
-  // +k8s:alpha(since: "1.36")=+k8s:unionMember
-  // +k8s:alpha(since: "1.36")=+k8s:subfield(name)=+k8s:format=k8s-long-name
+  // +k8s:unionMember
+  // +k8s:subfield(name)=+k8s:format=k8s-long-name
   optional LocalTargetReference pod = 1;
 }
 
@@ -239,7 +239,7 @@ message InterceptorStatus {
   // This field is initialized by Kubernetes and must be unique for each interceptor.
   // This field is required.
   // +required
-  // +k8s:alpha(since: "1.36")=+k8s:required
+  // +k8s:required
   optional string name = 1;
 
   // startTime tracks the time at which this interceptor was designated as active and should start
@@ -248,9 +248,9 @@ message InterceptorStatus {
   // This field is initialized by Kubernetes when this interceptor becomes active.
   // This field becomes immutable once set.
   // +optional
-  // +k8s:alpha(since: "1.36")=+k8s:optional
-  // +k8s:alpha(since: "1.36")=+k8s:update=NoModify
-  // +k8s:alpha(since: "1.36")=+k8s:update=NoUnset
+  // +k8s:optional
+  // +k8s:beta(since: "1.36")=+k8s:update=NoModify
+  // +k8s:beta(since: "1.36")=+k8s:update=NoUnset
   optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time startTime = 2;
 
   // heartbeatTime is the last time at which the eviction process was reported to be in progress
@@ -259,7 +259,7 @@ message InterceptorStatus {
   // Interceptors should avoid heartbeats more frequent than 20 seconds to avoid overloading the
   // control-plane.
   // +optional
-  // +k8s:alpha(since: "1.36")=+k8s:optional
+  // +k8s:optional
   optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time heartbeatTime = 3;
 
   // expectedCompletionTime is the time at which the eviction process step is expected to end for the
@@ -267,7 +267,7 @@ message InterceptorStatus {
   // The time cannot be set to the past.
   // May be omitted if no estimate can be made.
   // +optional
-  // +k8s:alpha(since: "1.36")=+k8s:optional
+  // +k8s:optional
   optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time expectedCompletionTime = 4;
 
   // completionTime tracks the time at which the Interceptor stopped processing the eviction request.
@@ -276,17 +276,17 @@ message InterceptorStatus {
   // It should reflect the present time when set.
   // This field becomes immutable once set.
   // +optional
-  // +k8s:alpha(since: "1.36")=+k8s:optional
-  // +k8s:alpha(since: "1.36")=+k8s:update=NoModify
-  // +k8s:alpha(since: "1.36")=+k8s:update=NoUnset
+  // +k8s:optional
+  // +k8s:beta(since: "1.36")=+k8s:update=NoModify
+  // +k8s:beta(since: "1.36")=+k8s:update=NoUnset
   optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time completionTime = 5;
 
   // message provides human-readable details about the state of the interceptor and the eviction
   // process.
   // Maximum length is 4000 characters. The string is truncated if it exceeds this limit.
   // +optional
-  // +k8s:alpha(since: "1.36")=+k8s:optional
-  // +k8s:alpha(since: "1.36")=+k8s:maxLength=4000
+  // +k8s:optional
+  // +k8s:beta(since: "1.36")=+k8s:maxLength=4000
   optional string message = 6;
 }
 
@@ -295,15 +295,15 @@ message LocalTargetReference {
   // name of the target.
   // This field is required.
   // +required
-  // +k8s:alpha(since: "1.36")=+k8s:required
+  // +k8s:required
   optional string name = 1;
 
   // uid of the target.
   // It can be found in .spec.metadata.uid of the target and is a lowercase UUID in 8-4-4-4-12 format.
   // This field is required.
   // +required
-  // +k8s:alpha(since: "1.36")=+k8s:required
-  // +k8s:alpha(since: "1.36")=+k8s:format=k8s-uuid
+  // +k8s:required
+  // +k8s:format=k8s-uuid
   optional string uid = 2;
 }
 
@@ -317,7 +317,7 @@ message Requester {
   // This field must be unique for each requester.
   // This field is required.
   // +required
-  // +k8s:alpha(since: "1.36")=+k8s:required
+  // +k8s:required
   optional string name = 1;
 }
 
@@ -333,7 +333,7 @@ message TargetInterceptor {
   // This field must be unique for each interceptor.
   // This field is required.
   // +required
-  // +k8s:alpha(since: "1.36")=+k8s:required
+  // +k8s:required
   optional string name = 1;
 }
 
