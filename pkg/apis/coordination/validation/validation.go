@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"k8s.io/utils/ptr"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/operation"
@@ -187,12 +186,13 @@ func ValidateEvictionRequest(evictionRequest *coordination.EvictionRequest) fiel
 	var allErrs field.ErrorList
 	metadataFldPath := field.NewPath("metadata")
 	if len(evictionRequest.GenerateName) != 0 {
-		allErrs = append(allErrs, field.Forbidden(metadataFldPath.Child("generateName"), "").MarkCoveredByDeclarative())
+		allErrs = append(allErrs, field.Forbidden(metadataFldPath.Child("generateName"), "").MarkAlpha().MarkCoveredByDeclarative())
 	}
-	allErrs = append(allErrs, validate.UUID(context.TODO(), operation.Operation{Type: operation.Create}, metadataFldPath.Child("name"), ptr.To(evictionRequest.Name), ptr.To("")).MarkCoveredByDeclarative()...)
+	// name
+	// validate.UUID handled declaratively
 
 	allErrs = append(allErrs, apivalidation.ValidateObjectMeta(&evictionRequest.ObjectMeta, true, func(name string, prefix bool) []string {
-		// validation is handled by the check above
+		// validation is handled declaratively by the validate.UUID
 		return nil
 	}, metadataFldPath)...)
 	specOpts := EvictionRequestSpecValidationOptions{EvictionRequestName: evictionRequest.Name}
@@ -210,14 +210,7 @@ func ValidateEvictionRequestSpec(evictionRequestSpec *coordination.EvictionReque
 
 func ValidateEvictionTarget(evictionTarget coordination.EvictionTarget, fldPath *field.Path, opts EvictionRequestSpecValidationOptions) field.ErrorList {
 	var allErrs field.ErrorList
-	// union
-	var unionMembership = validate.NewUnionMembership(validate.NewUnionMember("pod"))
-	allErrs = append(allErrs, validate.Union(context.TODO(), operation.Operation{Type: operation.Create}, fldPath, &evictionTarget, nil, unionMembership, func(obj *coordination.EvictionTarget) bool {
-		if obj == nil {
-			return false
-		}
-		return obj.Pod != nil
-	}).MarkCoveredByDeclarative()...)
+	// validate.Union handled declaratively
 	if evictionTarget.Pod != nil {
 		allErrs = append(allErrs, ValidateLocalTargetReference(*evictionTarget.Pod, fldPath.Child("pod"), opts)...)
 	}
@@ -227,17 +220,12 @@ func ValidateEvictionTarget(evictionTarget coordination.EvictionTarget, fldPath 
 func ValidateLocalTargetReference(localTargetReference coordination.LocalTargetReference, fldPath *field.Path, opts EvictionRequestSpecValidationOptions) field.ErrorList {
 	var allErrs field.ErrorList
 	// name
-	nameFldPath := fldPath.Child("name")
-	allErrs = append(allErrs, validate.LongName(context.TODO(), operation.Operation{Type: operation.Create}, nameFldPath, ptr.To(localTargetReference.Name), nil).MarkCoveredByDeclarative()...)
-	if len(localTargetReference.Name) == 0 {
-		allErrs = append(allErrs, field.Required(nameFldPath, "")).MarkCoveredByDeclarative()
-	}
+	// validate.RequiredValue handled declaratively
+	// validate.LongName handled declaratively
 	// uid
 	uidFldPath := fldPath.Child("uid")
-	if len(localTargetReference.UID) == 0 {
-		allErrs = append(allErrs, field.Required(uidFldPath, "")).MarkCoveredByDeclarative()
-	} else {
-		allErrs = append(allErrs, validate.UUID(context.TODO(), operation.Operation{Type: operation.Create}, uidFldPath, ptr.To(localTargetReference.UID), nil).MarkCoveredByDeclarative()...)
+	// validate.RequiredValue handled declaratively
+	if len(localTargetReference.UID) != 0 {
 		if string(localTargetReference.UID) != opts.EvictionRequestName {
 			msg := fmt.Sprintf("must be the same value as %s", uidFldPath.String())
 			allErrs = append(allErrs, field.Forbidden(field.NewPath("metadata").Child("name"), msg))
@@ -255,12 +243,8 @@ func ValidateRequesters(requesters, oldRequesters []coordination.Requester, fldP
 		// eviction request cancellation - should be picked up by the controller
 		allErrs = append(allErrs, field.Invalid(fldPath, requesters, validation.FieldImmutableErrorMsg).WithOrigin("immutable"))
 	}
-	if maximum := 100; len(requesters) > maximum {
-		return field.ErrorList{field.TooMany(fldPath, len(requesters), maximum).WithOrigin("maxItems")}.MarkCoveredByDeclarative()
-	}
-	allErrs = append(allErrs, validate.Unique(context.TODO(), operation.Operation{Type: operationType}, fldPath, requesters, oldRequesters,
-		func(a coordination.Requester, b coordination.Requester) bool { return a.Name == b.Name }).MarkCoveredByDeclarative()...)
-
+	// validate.MaxItems handled declaratively
+	// validate.Unique handled declaratively
 	for i, requester := range requesters {
 		allErrs = append(allErrs, ValidateRequester(requester, fldPath.Index(i))...)
 	}
@@ -270,9 +254,8 @@ func ValidateRequesters(requesters, oldRequesters []coordination.Requester, fldP
 func ValidateRequester(requester coordination.Requester, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	namePath := fldPath.Child("name")
-	if len(requester.Name) == 0 {
-		allErrs = append(allErrs, field.Required(namePath, "")).MarkCoveredByDeclarative()
-	} else {
+	// validate.RequiredValue handled declaratively
+	if len(requester.Name) != 0 {
 		allErrs = append(allErrs, apivalidation.ValidateEvictionRequestParticipantName(namePath, requester.Name, apivalidation.EvictionRequestParticipantReservedSuffixes)...)
 	}
 	return allErrs
@@ -288,7 +271,7 @@ func ValidateEvictionRequestUpdate(evictionRequest, oldEvictionRequest *coordina
 // ValidateEvictionRequestSpec validates an ValidateEvictionRequestSpec.
 func ValidateEvictionRequestSpecUpdate(evictionRequestSpec, oldEvictionRequestSpec *coordination.EvictionRequestSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
-	allErrs = append(allErrs, apivalidation.ValidateImmutableField(evictionRequestSpec.Target, oldEvictionRequestSpec.Target, fldPath.Child("target")).WithOrigin("immutable").MarkCoveredByDeclarative()...)
+	allErrs = append(allErrs, apivalidation.ValidateImmutableField(evictionRequestSpec.Target, oldEvictionRequestSpec.Target, fldPath.Child("target")).WithOrigin("immutable").MarkBeta().MarkCoveredByDeclarative()...)
 	allErrs = append(allErrs, ValidateRequesters(evictionRequestSpec.Requesters, oldEvictionRequestSpec.Requesters, fldPath.Child("requesters"), operation.Update)...)
 	return allErrs
 }
@@ -310,19 +293,15 @@ func ValidateEvictionRequestStatus(status, oldStatus *coordination.EvictionReque
 
 	// observedGeneration
 	observedGenerationPath := fldPath.Child("observedGeneration")
-	if minimum := int64(0); status.ObservedGeneration < minimum {
-		allErrs = append(allErrs, field.Invalid(observedGenerationPath, status.ObservedGeneration, content.MinError(minimum)).WithOrigin("minimum")).MarkCoveredByDeclarative()
-	} else if status.ObservedGeneration < oldStatus.ObservedGeneration {
+	// validate.Minimum handled declaratively
+	if status.ObservedGeneration >= 0 && status.ObservedGeneration < oldStatus.ObservedGeneration {
 		allErrs = append(allErrs, field.Invalid(observedGenerationPath, status.ObservedGeneration, "cannot decrement, "+content.MinError(oldStatus.ObservedGeneration)))
 	}
 
 	// conditions
 	conditionsPath := fldPath.Child("conditions")
-	if maxConditions := 1000; len(status.Conditions) > maxConditions {
-		return append(allErrs, field.TooMany(conditionsPath, len(status.Conditions), maxConditions).WithOrigin("maxItems").MarkCoveredByDeclarative())
-	}
-	allErrs = append(allErrs, validate.Unique(context.TODO(), operation.Operation{}, conditionsPath, status.Conditions, nil,
-		func(a v1.Condition, b v1.Condition) bool { return a.Type == b.Type }).MarkCoveredByDeclarative()...)
+	// validate.MaxItems handled declaratively
+	// validate.Unique handled declaratively
 	for i, condition := range status.Conditions {
 		allErrs = append(allErrs, validation2.ValidateCondition(condition, conditionsPath.Index(i))...)
 	}
@@ -400,7 +379,8 @@ func ValidateAllEvictionRequestStatusInterceptorFields(status, oldStatus *coordi
 	if errs := ValidateEvictionRequestTargetInterceptors(status.TargetInterceptors, oldStatus.TargetInterceptors, fldPath.Child("targetInterceptors"), ValidateEvictionRequestTargetInterceptorsOptions{
 		MaxInterceptors: maxInterceptors,
 	}); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+		// Declarative errors are used to check if we have a valid data. Filter them as we will get them in declarative validation again.
+		allErrs = append(allErrs, filterOutDeclarativeStableErrors(errs)...)
 		targetInterceptors = targetInterceptorsToNames(oldStatus.TargetInterceptors) // do not use invalid data for next validation steps
 	}
 
@@ -411,7 +391,8 @@ func ValidateAllEvictionRequestStatusInterceptorFields(status, oldStatus *coordi
 		TargetInterceptors:    targetInterceptors,
 		ProcessedInterceptors: sets.New[string](status.ProcessedInterceptors...),
 	}); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+		// Declarative errors are used to check if we have a valid data. Filter them as we will get them in declarative validation again.
+		allErrs = append(allErrs, filterOutDeclarativeStableErrors(errs)...)
 		activeInterceptors = activeInterceptors.Clear().Insert(oldStatus.ActiveInterceptors...) // do not use invalid data for next validation steps
 	}
 
@@ -424,7 +405,8 @@ func ValidateAllEvictionRequestStatusInterceptorFields(status, oldStatus *coordi
 		AllowedTimeSkew:           allowedTimeSkew,
 		MaxExpectedCompletionTime: allowedMaxExpectedCompletionTime,
 	}); len(errs) > 0 {
-		allErrs = append(allErrs, errs...)
+		// Declarative errors are used to check if we have a valid data. Filter them as we will get them in declarative validation again.
+		allErrs = append(allErrs, filterOutDeclarativeStableErrors(errs)...)
 		statusInterceptors = append(make([]coordination.InterceptorStatus, 0, len(oldStatus.Interceptors)), oldStatus.Interceptors...) // do not use invalid data for next validation steps
 	}
 
@@ -452,6 +434,17 @@ func targetInterceptorsToNames(targetInterceptors []coordination.TargetIntercept
 	return targetInterceptorNames
 }
 
+func filterOutDeclarativeStableErrors(errs field.ErrorList) field.ErrorList {
+	var allErrs field.ErrorList
+	for _, err := range errs {
+		isStable := !err.IsAlpha() && !err.IsBeta()
+		if !err.CoveredByDeclarative || !isStable {
+			allErrs = append(allErrs, err)
+		}
+	}
+	return allErrs
+}
+
 type ValidateEvictionRequestTargetInterceptorsOptions struct {
 	MaxInterceptors int
 }
@@ -463,9 +456,11 @@ func ValidateEvictionRequestTargetInterceptors(targetInterceptors, oldTargetInte
 	}
 
 	if len(targetInterceptors) > opts.MaxInterceptors {
+		// simulate declarative error for code flow control and further data validation
 		return append(allErrs, field.TooMany(fldPath, len(targetInterceptors), opts.MaxInterceptors).WithOrigin("maxItems").MarkCoveredByDeclarative())
 	}
 
+	// simulate declarative error for further data validation
 	uniqueErrors := validate.Unique(context.TODO(), operation.Operation{}, fldPath, targetInterceptors, nil,
 		func(a coordination.TargetInterceptor, b coordination.TargetInterceptor) bool { return a.Name == b.Name }).MarkCoveredByDeclarative()
 	allErrs = append(allErrs, uniqueErrors...)
@@ -481,6 +476,7 @@ func ValidateTargetInterceptor(evictionInterceptor coordination.TargetIntercepto
 
 	namePath := fldPath.Child("name")
 	if len(evictionInterceptor.Name) == 0 {
+		// simulate declarative error for further data validation
 		allErrs = append(allErrs, field.Required(namePath, "")).MarkCoveredByDeclarative()
 	} else {
 		// unlike in a pod, there are no forbidden prefixes in the status
@@ -526,8 +522,10 @@ func ValidateEvictionRequestActiveInterceptors(activeInterceptors, oldActiveInte
 		}
 	}
 	if len(activeInterceptors) > maxActiveInterceptors {
+		// simulate declarative error for code flow control and further data validation
 		return append(allErrs, field.TooMany(fldPath, len(activeInterceptors), maxActiveInterceptors).WithOrigin("maxItems").MarkCoveredByDeclarative())
 	}
+	// simulate declarative error for further data validation
 	allErrs = append(allErrs, validate.Unique(context.TODO(), operation.Operation{Type: operation.Update}, fldPath, activeInterceptors, oldActiveInterceptors, validate.DirectEqual).MarkCoveredByDeclarative()...)
 
 	for i, activeInterceptor := range activeInterceptors {
@@ -574,8 +572,10 @@ func ValidateEvictionRequestStatusInterceptors(statusInterceptors, oldStatusInte
 		}
 	}
 	if maximum := opts.MaxInterceptors; len(statusInterceptors) > maximum {
+		// simulate declarative error for code flow control and further data validation
 		return append(allErrs, field.TooMany(fldPath, len(statusInterceptors), maximum).WithOrigin("maxItems").MarkCoveredByDeclarative())
 	}
+	// simulate declarative error for further data validation
 	allErrs = append(allErrs, validate.Unique(context.TODO(), operation.Operation{Type: operation.Update}, fldPath, statusInterceptors, oldStatusInterceptors, func(a coordination.InterceptorStatus, b coordination.InterceptorStatus) bool {
 		return a.Name == b.Name
 	}).MarkCoveredByDeclarative()...)
@@ -624,6 +624,7 @@ func ValidateEvictionRequestStatusInterceptor(status, oldStatus *coordination.In
 		return append(allErrs, field.Invalid(namePath, status.Name, validation.FieldImmutableErrorMsg).WithOrigin("immutable"))
 	}
 	if len(status.Name) == 0 {
+		// simulate declarative error for further data validation
 		allErrs = append(allErrs, field.Required(namePath, "")).MarkCoveredByDeclarative()
 	} else if !opts.IsTargetInterceptor {
 		allErrs = append(allErrs, field.Invalid(namePath, status.Name, "is not a valid target interceptor"))
@@ -634,9 +635,13 @@ func ValidateEvictionRequestStatusInterceptor(status, oldStatus *coordination.In
 	// immutable once set
 	if oldDefaultedStatus.StartTime != nil && !oldDefaultedStatus.StartTime.Equal(status.StartTime) {
 		if status.StartTime == nil {
-			allErrs = append(allErrs, field.Invalid(startTimePath, nil, "field cannot be cleared once set").WithOrigin("update").MarkCoveredByDeclarative())
+			// pass through beta error, it needs to be preserved even after the validation graduation to
+			// simulate declarative error for further data validation
+			allErrs = append(allErrs, field.Invalid(startTimePath, nil, "field cannot be cleared once set").WithOrigin("update").MarkBeta().MarkCoveredByDeclarative())
 		} else {
-			allErrs = append(allErrs, field.Invalid(startTimePath, nil, "field cannot be modified once set").WithOrigin("update").MarkCoveredByDeclarative())
+			// pass through beta error, it needs to be preserved even after the validation graduation to
+			// simulate declarative error for further data validation
+			allErrs = append(allErrs, field.Invalid(startTimePath, nil, "field cannot be modified once set").WithOrigin("update").MarkBeta().MarkCoveredByDeclarative())
 		}
 	} else if status.StartTime == nil && opts.IsActiveInterceptor {
 		allErrs = append(allErrs, field.Required(startTimePath, "is required for an active interceptor"))
@@ -683,9 +688,13 @@ func ValidateEvictionRequestStatusInterceptor(status, oldStatus *coordination.In
 	// immutable once set
 	if oldDefaultedStatus.CompletionTime != nil && !oldDefaultedStatus.CompletionTime.Equal(status.CompletionTime) {
 		if status.CompletionTime == nil {
-			allErrs = append(allErrs, field.Invalid(completionTimePath, nil, "field cannot be cleared once set").WithOrigin("update").MarkCoveredByDeclarative())
+			// pass through beta error, it needs to be preserved even after the validation graduation to
+			// simulate declarative error for further data validation
+			allErrs = append(allErrs, field.Invalid(completionTimePath, nil, "field cannot be cleared once set").WithOrigin("update").MarkBeta().MarkCoveredByDeclarative())
 		} else {
-			allErrs = append(allErrs, field.Invalid(completionTimePath, nil, "field cannot be modified once set").WithOrigin("update").MarkCoveredByDeclarative())
+			// pass through beta error, it needs to be preserved even after the validation graduation to
+			// simulate declarative error for further data validation
+			allErrs = append(allErrs, field.Invalid(completionTimePath, nil, "field cannot be modified once set").WithOrigin("update").MarkBeta().MarkCoveredByDeclarative())
 		}
 	} else if status.CompletionTime != nil {
 		if status.StartTime == nil {
@@ -702,7 +711,7 @@ func ValidateEvictionRequestStatusInterceptor(status, oldStatus *coordination.In
 	// validate.MaxLength is present in the declarative validation to record the intent, but we do not act on it.
 	// This allows heartbeat updates in case the interceptor does not properly test its input and tries to send a long
 	// message on rare occasions.
-	allErrs = append(allErrs, validate.MaxLength(context.TODO(), operation.Operation{Type: operation.Update}, fldPath.Child("message"), ptr.To(status.Message), ptr.To(oldDefaultedStatus.Message), 4000).WithOrigin("maxLength").MarkCoveredByDeclarative()...)
+	allErrs = append(allErrs, validate.MaxLength(context.TODO(), operation.Operation{Type: operation.Update}, fldPath.Child("message"), &status.Message, &oldDefaultedStatus.Message, 4000).WithOrigin("maxLength").MarkBeta().MarkCoveredByDeclarative()...)
 
 	return allErrs
 }
@@ -729,9 +738,10 @@ func ValidateEvictionRequestProcessedInterceptors(processedInterceptors, oldProc
 		return append(allErrs, field.Forbidden(fldPath, "items can only be added one at a time"))
 	}
 	if maximum := opts.MaxInterceptors; len(processedInterceptors) > maximum {
-		return append(allErrs, field.TooMany(fldPath, len(processedInterceptors), maximum).WithOrigin("maxItems").MarkCoveredByDeclarative())
+		// TooMany is handled by declarative validation - detect early return
+		return allErrs
 	}
-	allErrs = append(allErrs, validate.Unique(context.TODO(), operation.Operation{Type: operation.Update}, fldPath, processedInterceptors, oldProcessedInterceptors, validate.DirectEqual).MarkCoveredByDeclarative()...)
+	// Unique is handled by declarative validation
 
 	for i, interceptor := range processedInterceptors {
 		processedInterceptorPath := fldPath.Index(i)

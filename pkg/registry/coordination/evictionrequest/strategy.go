@@ -101,12 +101,16 @@ func (*evictionRequestStrategy) PrepareForUpdate(ctx context.Context, obj, old r
 // Validate validates a new EvictionRequest.
 func (s *evictionRequestStrategy) Validate(ctx context.Context, obj runtime.Object) field.ErrorList {
 	evictionRequest := obj.(*coordination.EvictionRequest)
-	if errs := s.isTargetDeletionAuthorized(ctx, evictionRequest, field.NewPath("")); errs != nil {
+	unauthorizedMustFail, errs := s.isTargetDeletionAuthorized(ctx, evictionRequest, field.NewPath(""))
+	if errs != nil {
 		return errs
 	}
 	allErrs := validation.ValidateEvictionRequest(evictionRequest)
-	return rest.ValidateDeclarativelyWithMigrationChecks(ctx, legacyscheme.Scheme, obj, nil, allErrs, operation.Create, rest.WithDeclarativeEnforcement())
-
+	allErrs = rest.ValidateDeclarativelyWithMigrationChecks(ctx, legacyscheme.Scheme, obj, nil, allErrs, operation.Create, rest.WithDeclarativeEnforcement())
+	if len(allErrs) == 0 && unauthorizedMustFail {
+		allErrs = append(allErrs, field.InternalError(field.NewPath("spec", "target"), fmt.Errorf("unknown target type, authorization support not implemented")))
+	}
+	return allErrs
 }
 func (*evictionRequestStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
 	return nil
@@ -121,16 +125,22 @@ func (*evictionRequestStrategy) AllowCreateOnUpdate() bool {
 
 // ValidateUpdate is the default update validation for an end user.
 func (s *evictionRequestStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
+	var allErrs field.ErrorList
 	evictionRequest := obj.(*coordination.EvictionRequest)
 	oldEvictionRequest := old.(*coordination.EvictionRequest)
+	unauthorizedMustFail := false
 	// each new requester must be added by a user with pod delete privileges
 	if hasNewRequester(evictionRequest.Spec.Requesters, oldEvictionRequest.Spec.Requesters) {
-		if errs := s.isTargetDeletionAuthorized(ctx, evictionRequest, field.NewPath("spec", "requesters")); errs != nil {
-			return errs
+		if unauthorizedMustFail, allErrs = s.isTargetDeletionAuthorized(ctx, evictionRequest, field.NewPath("spec", "requesters")); allErrs != nil {
+			return allErrs
 		}
 	}
-	allErrs := validation.ValidateEvictionRequestUpdate(evictionRequest, oldEvictionRequest)
-	return rest.ValidateDeclarativelyWithMigrationChecks(ctx, legacyscheme.Scheme, evictionRequest, oldEvictionRequest, allErrs, operation.Update, rest.WithDeclarativeEnforcement())
+	allErrs = validation.ValidateEvictionRequestUpdate(evictionRequest, oldEvictionRequest)
+	allErrs = rest.ValidateDeclarativelyWithMigrationChecks(ctx, legacyscheme.Scheme, evictionRequest, oldEvictionRequest, allErrs, operation.Update, rest.WithDeclarativeEnforcement())
+	if len(allErrs) == 0 && unauthorizedMustFail {
+		allErrs = append(allErrs, field.InternalError(field.NewPath("spec", "target"), fmt.Errorf("unknown target type, authorization support not implemented")))
+	}
+	return allErrs
 }
 
 func (*evictionRequestStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
@@ -141,10 +151,10 @@ func (*evictionRequestStrategy) AllowUnconditionalUpdate() bool {
 	return false
 }
 
-func (s *evictionRequestStrategy) isTargetDeletionAuthorized(ctx context.Context, evictionRequest *coordination.EvictionRequest, fldPath *field.Path) field.ErrorList {
+func (s *evictionRequestStrategy) isTargetDeletionAuthorized(ctx context.Context, evictionRequest *coordination.EvictionRequest, fldPath *field.Path) (bool, field.ErrorList) {
 	user, ok := genericapirequest.UserFrom(ctx)
 	if !ok {
-		return field.ErrorList{
+		return true, field.ErrorList{
 			field.InternalError(field.NewPath(""), fmt.Errorf("cannot determine calling user to perform \"authorization\" check")),
 		}
 	}
@@ -152,7 +162,6 @@ func (s *evictionRequestStrategy) isTargetDeletionAuthorized(ctx context.Context
 	if evictionRequest.Spec.Target.Pod != nil {
 		resource = "pods"
 	}
-	targetPath := field.NewPath("spec", "target")
 	if len(resource) != 0 {
 		attr := authorizer.AttributesRecord{
 			User:            user,
@@ -164,20 +173,15 @@ func (s *evictionRequestStrategy) isTargetDeletionAuthorized(ctx context.Context
 			ResourceRequest: true,
 		}
 		if decision, _, _ := s.authorizer.Authorize(ctx, attr); decision != authorizer.DecisionAllow {
-			return field.ErrorList{
-				field.Forbidden(fldPath, fmt.Sprintf("User %q must have permission to delete pods in %q namespace when %s is set", user.GetName(), evictionRequest.Namespace, targetPath.Child("pod").String())),
+			return true, field.ErrorList{
+				field.Forbidden(fldPath, fmt.Sprintf("User %q must have permission to delete pods in %q namespace when %s is set", user.GetName(), evictionRequest.Namespace, field.NewPath("spec", "target", "pod").String())),
 			}
 		}
 	} else {
 		// If there is no resource set on the target, then we have to ensure that the target validation is failing on create
-		targetValidationErr := validation.ValidateEvictionTarget(evictionRequest.Spec.Target, targetPath, validation.EvictionRequestSpecValidationOptions{EvictionRequestName: evictionRequest.Name})
-		if targetValidationErr == nil {
-			// If the validation passes, fail to ensure we don't forget to add auth support for the new target type.
-			return field.ErrorList{field.InternalError(targetPath, fmt.Errorf("unknown target type, authorization support not implemented"))}
-		}
-		// ValidateEvictionTarget will be resolved again later in ValidateEvictionRequest
+		return true, nil
 	}
-	return nil
+	return false, nil
 }
 
 func hasNewRequester(requesters, oldRequesters []coordination.Requester) bool {

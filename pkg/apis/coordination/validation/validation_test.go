@@ -402,7 +402,6 @@ func TestValidateEvictionRequest(t *testing.T) {
 		"name is not valid": {
 			input: mkValidEvictionRequest(1, setName("invalid-name-test", "")),
 			errors: []*field.Error{
-				field.Invalid(field.NewPath("metadata", "name"), "invalid-name-test", "must be a lowercase UUID in 8-4-4-4-12 format").MarkCoveredByDeclarative(),
 				field.Forbidden(field.NewPath("metadata", "name"), "must be the same value as spec.target.pod.uid"),
 			},
 		},
@@ -416,7 +415,6 @@ func TestValidateEvictionRequest(t *testing.T) {
 			input: mkValidEvictionRequest(1, setName("", "invalid-generate-name")),
 			errors: []*field.Error{
 				field.Forbidden(field.NewPath("metadata", "generateName"), "").MarkCoveredByDeclarative(),
-				field.Invalid(field.NewPath("metadata", "name"), "", "must be a lowercase UUID in 8-4-4-4-12 format").MarkCoveredByDeclarative(),
 				field.Required(field.NewPath("metadata", "name"), "name or generateName is required"),
 				field.Forbidden(field.NewPath("metadata", "name"), "must be the same value as spec.target.pod.uid"),
 			},
@@ -427,60 +425,10 @@ func TestValidateEvictionRequest(t *testing.T) {
 				field.Forbidden(field.NewPath("metadata", "generateName"), "").MarkCoveredByDeclarative(),
 			},
 		},
-		"missing target": {
-			input: mkValidEvictionRequest(1, clearTarget()),
-			errors: []*field.Error{
-				field.Invalid(field.NewPath("spec", "target"), "invalid-name-test", "must specify one of: `pod`").MarkCoveredByDeclarative(),
-			},
-		},
-		"missing target name": {
-			input: mkValidEvictionRequest(1, setTarget("", valiUIDdName)),
-			errors: []*field.Error{
-				field.Invalid(field.NewPath("spec", "target", "pod", "name"), "", "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')").MarkCoveredByDeclarative(),
-				field.Required(field.NewPath("spec", "target", "pod", "name"), "").MarkCoveredByDeclarative(),
-			},
-		},
-		"invalid target name": {
-			input: mkValidEvictionRequest(1, setTarget("_test", valiUIDdName)),
-			errors: []*field.Error{
-				field.Invalid(field.NewPath("spec", "target", "pod", "name"), "_test", "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')").MarkCoveredByDeclarative(),
-			},
-		},
-		"missing target uid": {
-			input: mkValidEvictionRequest(1, setTarget("bar", "")),
-			errors: []*field.Error{
-				field.Required(field.NewPath("spec", "target", "pod", "uid"), "").MarkCoveredByDeclarative(),
-			},
-		},
-		"invalid target uid": {
-			input: mkValidEvictionRequest(1, setTarget("bar", "invalid-uid")),
-			errors: []*field.Error{
-				field.Invalid(field.NewPath("spec", "target", "pod", "uid"), "invalid-uid", "must be a lowercase UUID in 8-4-4-4-12 format").MarkCoveredByDeclarative(),
-				field.Forbidden(field.NewPath("metadata", "name"), "must be the same value as spec.target.pod.uid"),
-			},
-		},
 		"requesters are required": {
 			input: mkValidEvictionRequest(0),
 			errors: []*field.Error{
 				field.Required(field.NewPath("spec", "requesters"), "must have at least one requester on EvictionRequest creation"),
-			},
-		},
-		"too many requesters": {
-			input: mkValidEvictionRequest(101),
-			errors: []*field.Error{
-				field.TooMany(field.NewPath("spec", "requesters"), 101, 100).MarkCoveredByDeclarative(),
-			},
-		},
-		"duplicate requesters": {
-			input: mkValidEvictionRequest(3, addRequesters("foo.example.com", "foo.example.com")),
-			errors: []*field.Error{
-				field.Duplicate(field.NewPath("spec", "requesters").Index(4), "").MarkCoveredByDeclarative(),
-			},
-		},
-		"requester without a name": {
-			input: mkValidEvictionRequest(0, addRequesters("")),
-			errors: []*field.Error{
-				field.Required(field.NewPath("spec", "requesters").Index(0).Child("name"), "").MarkCoveredByDeclarative(),
 			},
 		},
 		"invalid requester, 2 segments": {
@@ -583,27 +531,6 @@ func TestValidateEvictionRequestUpdate(t *testing.T) {
 			input:    mkValidEvictionRequest(1),
 			errors: []*field.Error{
 				field.Invalid(field.NewPath("spec", "requesters"), "", validation.FieldImmutableErrorMsg),
-			},
-		},
-		"add too many requesters": {
-			oldInput: mkValidEvictionRequest(1),
-			input:    mkValidEvictionRequest(101),
-			errors: []*field.Error{
-				field.TooMany(field.NewPath("spec", "requesters"), 101, 100).MarkCoveredByDeclarative(),
-			},
-		},
-		"add a duplicate requesters": {
-			oldInput: mkValidEvictionRequest(3, addRequesters("foo.example.com")),
-			input:    mkValidEvictionRequest(3, addRequesters("foo.example.com", "foo.example.com")),
-			errors: []*field.Error{
-				field.Duplicate(field.NewPath("spec", "requesters").Index(4), "").MarkCoveredByDeclarative(),
-			},
-		},
-		"add a requester without a name": {
-			oldInput: mkValidEvictionRequest(1),
-			input:    mkValidEvictionRequest(1, addRequesters("")),
-			errors: []*field.Error{
-				field.Required(field.NewPath("spec", "requesters").Index(1).Child("name"), "").MarkCoveredByDeclarative(),
 			},
 		},
 		"add an invalid requester, 2 segments": {
@@ -1000,13 +927,6 @@ func TestValidateEvictionRequestStatusUpdate(t *testing.T) {
 				field.Invalid(field.NewPath("status", "observedGeneration"), 4, "cannot decrement, must be greater than or equal to 5"),
 			},
 		},
-		"decrease generation to negative": {
-			oldInput: mkValidEvictionRequestStatus(0, setObservedGeneration(5)),
-			input:    mkValidEvictionRequestStatus(0, setObservedGeneration(-1)),
-			errors: []*field.Error{
-				field.Invalid(field.NewPath("status", "observedGeneration"), -1, "must be greater than or equal to 0").MarkCoveredByDeclarative(),
-			},
-		},
 		// all interceptors
 		"immutable interceptor fields when targetInterceptors is missing": {
 			oldInput: mkValidEvictionRequestStatus(0),
@@ -1018,23 +938,13 @@ func TestValidateEvictionRequestStatusUpdate(t *testing.T) {
 			},
 		},
 		// targetInterceptors
-		"too many targetInterceptors": {
+		"invalid targetInterceptors": { // required and duplicate is tested in the declarative validation test
 			oldInput: mkValidEvictionRequestStatus(0),
-			input:    mkValidEvictionRequestStatusWithStatuses(17, 0),
+			input:    mkValidEvictionRequestStatus(0, addTargetInterceptors("test.foo.net", "f.ba.com", "invalid", "foo.k8s.io", "example.com", "foo.example.com/bar")),
 			errors: []*field.Error{
-				field.TooMany(field.NewPath("status", "targetInterceptors"), 17, 16).MarkCoveredByDeclarative(),
-				field.Required(field.NewPath("status", "interceptors"), ""),
-			},
-		},
-		"invalid targetInterceptors and required status interceptors": {
-			oldInput: mkValidEvictionRequestStatus(0),
-			input:    mkValidEvictionRequestStatus(0, addTargetInterceptors("f.ba.com", "f.ba.com", "", "invalid", "foo.k8s.io", "example.com", "foo.example.com/bar")),
-			errors: []*field.Error{
-				field.Duplicate(field.NewPath("status", "targetInterceptors").Index(1), "").MarkCoveredByDeclarative(),
-				field.Required(field.NewPath("status", "targetInterceptors").Index(2).Child("name"), "").MarkAlpha().MarkCoveredByDeclarative(),
-				field.Invalid(field.NewPath("status", "targetInterceptors").Index(3).Child("name"), "invalid", "should be a domain with at least three segments separated by dots"),
-				field.Invalid(field.NewPath("status", "targetInterceptors").Index(5).Child("name"), "example.com", "should be a domain with at least three segments separated by dots"),
-				field.Invalid(field.NewPath("status", "targetInterceptors").Index(6).Child("name"), "foo.example.com/bar", "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')"),
+				field.Invalid(field.NewPath("status", "targetInterceptors").Index(2).Child("name"), "invalid", "should be a domain with at least three segments separated by dots"),
+				field.Invalid(field.NewPath("status", "targetInterceptors").Index(4).Child("name"), "example.com", "should be a domain with at least three segments separated by dots"),
+				field.Invalid(field.NewPath("status", "targetInterceptors").Index(5).Child("name"), "foo.example.com/bar", "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')"),
 				field.Required(field.NewPath("status", "interceptors"), ""),
 			},
 		},
@@ -1090,20 +1000,6 @@ func TestValidateEvictionRequestStatusUpdate(t *testing.T) {
 			input:    mkValidEvictionRequestStatus(3, addActiveInterceptors(), setInterceptorsFullStatus(clock, clock2, 0, 1)),
 			errors: []*field.Error{
 				field.Forbidden(field.NewPath("status", "activeInterceptors"), "items cannot be removed, unless they are added to status.processedInterceptors"),
-			},
-		},
-		"too many activeInterceptors": {
-			oldInput: mkValidEvictionRequestStatus(0),
-			input:    mkValidEvictionRequestStatus(5, addActiveInterceptorsCount(2)),
-			errors: []*field.Error{
-				field.TooMany(field.NewPath("status", "activeInterceptors"), 2, 1).MarkCoveredByDeclarative(),
-			},
-		},
-		"duplicate activeInterceptors -short circuited by too many": {
-			oldInput: mkValidEvictionRequestStatus(3),
-			input:    mkValidEvictionRequestStatus(3, addActiveInterceptors(interceptorName(0), interceptorName(0))),
-			errors: []*field.Error{
-				field.TooMany(field.NewPath("status", "activeInterceptors"), 2, 1).MarkCoveredByDeclarative(),
 			},
 		},
 		"invalid activeInterceptors": {
@@ -1165,34 +1061,6 @@ func TestValidateEvictionRequestStatusUpdate(t *testing.T) {
 				setInterceptorsFullStatus(clock, clock2, 0, 2)),
 			errors: []*field.Error{
 				field.Forbidden(field.NewPath("status", "processedInterceptors"), "items can only be added one at a time"),
-			},
-		},
-		"too many processedInterceptors": {
-			// invalid input, but allows us to set too many processedInterceptors
-			oldInput: mkValidEvictionRequestStatus(16,
-				addActiveInterceptorsCount(16),
-				addProcessedInterceptorsCount(16),
-				setInterceptorsStartTime(clock, 0, 16),
-				setInterceptorsCompletionTime(clock, 0, 16)),
-			input: mkValidEvictionRequestStatus(16,
-				addProcessedInterceptorsCount(17),
-				setInterceptorsStartTime(clock, 0, 16),
-				setInterceptorsCompletionTime(clock, 0, 16)),
-			errors: []*field.Error{
-				field.TooMany(field.NewPath("status", "processedInterceptors"), 17, 16).MarkCoveredByDeclarative(),
-			},
-		},
-		"duplicate processedInterceptors": {
-			oldInput: mkValidEvictionRequestStatus(3,
-				addActiveInterceptors(interceptorName(0)),
-				addProcessedInterceptors(interceptorName(0)),
-				setInterceptorsFullStatus(clock, clock2, 0, 1)),
-			input: mkValidEvictionRequestStatus(3,
-				addProcessedInterceptors(interceptorName(0), interceptorName(0)),
-				setInterceptorsFullStatus(clock, clock2, 0, 1)),
-			errors: []*field.Error{
-				field.Duplicate(field.NewPath("status", "processedInterceptors").Index(1), "").MarkCoveredByDeclarative(),
-				field.Forbidden(field.NewPath("status", "processedInterceptors").Index(1), "is immutable because a \"status.interceptors[1]\" does not have a matching name"),
 			},
 		},
 		"old processedInterceptors are immutable": {
@@ -1319,13 +1187,6 @@ func TestValidateEvictionRequestStatusUpdate(t *testing.T) {
 			input:    mkValidEvictionRequestStatusWithStatuses(5, 4),
 			errors: []*field.Error{
 				field.Invalid(field.NewPath("status", "interceptors"), "", "should be the same length as status.targetInterceptors and contain the same keys in the same order"),
-			},
-		},
-		"too many status interceptors": {
-			oldInput: mkValidEvictionRequestStatusWithStatuses(17, 16),
-			input:    mkValidEvictionRequestStatus(17),
-			errors: []*field.Error{
-				field.TooMany(field.NewPath("status", "interceptors"), 17, 16).MarkCoveredByDeclarative(),
 			},
 		},
 		"duplicate status interceptors - short circuited by targetInterceptors key order": {
@@ -1621,20 +1482,6 @@ func TestValidateEvictionRequestStatusUpdate(t *testing.T) {
 			},
 		},
 		// conditions
-		"too many conditions": {
-			oldInput: mkValidEvictionRequestStatus(0),
-			input:    mkValidEvictionRequestStatus(0, addConditionsCount(clock, 1001)),
-			errors: []*field.Error{
-				field.TooMany(field.NewPath("status", "conditions"), 1001, 1000).MarkCoveredByDeclarative(),
-			},
-		},
-		"duplicate condition": {
-			oldInput: mkValidEvictionRequestStatus(1),
-			input:    mkValidEvictionRequestStatus(1, addCondition(clock, coordination.EvictionRequestConditionEvicted, true), addCondition(clock, coordination.EvictionRequestConditionEvicted, true)),
-			errors: []*field.Error{
-				field.Duplicate(field.NewPath("status", "conditions").Index(1), "").MarkCoveredByDeclarative(),
-			},
-		},
 		"add invalid condition": {
 			oldInput: mkValidEvictionRequestStatus(1),
 			input: mkValidEvictionRequestStatus(1, func(obj *coordination.EvictionRequestStatus) {
@@ -1810,13 +1657,6 @@ func addCondition(clock utilsclock.PassiveClock, name coordination.EvictionReque
 			newCond.Status = metav1.ConditionTrue
 		}
 		obj.Conditions = append(obj.Conditions, newCond)
-	}
-}
-func addConditionsCount(clock utilsclock.PassiveClock, count int) func(obj *coordination.EvictionRequestStatus) {
-	return func(obj *coordination.EvictionRequestStatus) {
-		for i := range count {
-			addCondition(clock, coordination.EvictionRequestConditionType(fmt.Sprintf("Condition%d", i)), true)(obj)
-		}
 	}
 }
 

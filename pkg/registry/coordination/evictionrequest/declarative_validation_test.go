@@ -72,7 +72,7 @@ func testDeclarativeValidate(t *testing.T, apiVersion string) {
 		"name is not valid": {
 			input: mkValidEvictionRequest(1, setName("invalid-name-test", "")),
 			errors: field.ErrorList{
-				field.Invalid(field.NewPath("metadata", "name"), "invalid-name-test", "must be a lowercase UUID in 8-4-4-4-12 format").WithOrigin("format=k8s-uuid").MarkAlpha(),
+				field.Invalid(field.NewPath("metadata", "name"), "invalid-name-test", "must be a lowercase UUID in 8-4-4-4-12 format").WithOrigin("format=k8s-uuid"),
 				field.Forbidden(field.NewPath("metadata", "name"), "must be the same value as spec.target.pod.uid").MarkFromImperative(),
 			},
 		},
@@ -86,7 +86,7 @@ func testDeclarativeValidate(t *testing.T, apiVersion string) {
 			input: mkValidEvictionRequest(1, setName("", "invalid-generate-name")),
 			errors: field.ErrorList{
 				field.Forbidden(field.NewPath("metadata", "generateName"), "").MarkAlpha(),
-				field.Invalid(field.NewPath("metadata", "name"), "invalid-name-test", "must be a lowercase UUID in 8-4-4-4-12 format").WithOrigin("format=k8s-uuid").MarkAlpha(),
+				field.Invalid(field.NewPath("metadata", "name"), "invalid-name-test", "must be a lowercase UUID in 8-4-4-4-12 format").WithOrigin("format=k8s-uuid"),
 				field.Required(field.NewPath("metadata", "name"), "name or generateName is required").MarkFromImperative(),
 				field.Forbidden(field.NewPath("metadata", "name"), "must be the same value as spec.target.pod.uid").MarkFromImperative(),
 			},
@@ -100,32 +100,32 @@ func testDeclarativeValidate(t *testing.T, apiVersion string) {
 		"missing target": {
 			input: mkValidEvictionRequest(1, clearTarget()),
 			errors: field.ErrorList{
-				field.Invalid(field.NewPath("spec", "target"), "invalid-name-test", "must specify one of: `pod`").WithOrigin("union").MarkAlpha(),
+				field.Invalid(field.NewPath("spec", "target"), "invalid-name-test", "must specify one of: `pod`").WithOrigin("union"),
 			},
 		},
 		"missing target name": {
 			input: mkValidEvictionRequest(1, setTarget("", valiUIDdName)),
 			errors: field.ErrorList{
-				field.Invalid(field.NewPath("spec", "target", "pod", "name"), "", "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')").WithOrigin("format=k8s-long-name").MarkAlpha(),
-				field.Required(field.NewPath("spec", "target", "pod", "name"), "").MarkAlpha(),
+				field.Invalid(field.NewPath("spec", "target", "pod", "name"), "", "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')").WithOrigin("format=k8s-long-name"),
+				field.Required(field.NewPath("spec", "target", "pod", "name"), ""),
 			},
 		},
 		"invalid target name": {
 			input: mkValidEvictionRequest(1, setTarget("_test", valiUIDdName)),
 			errors: []*field.Error{
-				field.Invalid(field.NewPath("spec", "target", "pod", "name"), "_test", "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')").WithOrigin("format=k8s-long-name").MarkAlpha(),
+				field.Invalid(field.NewPath("spec", "target", "pod", "name"), "_test", "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')").WithOrigin("format=k8s-long-name"),
 			},
 		},
 		"missing target uid": {
 			input: mkValidEvictionRequest(1, setTarget("bar", "")),
 			errors: field.ErrorList{
-				field.Required(field.NewPath("spec", "target", "pod", "uid"), "").MarkAlpha(),
+				field.Required(field.NewPath("spec", "target", "pod", "uid"), ""),
 			},
 		},
 		"invalid target uid": {
 			input: mkValidEvictionRequest(1, setTarget("bar", "invalid-uid")),
 			errors: field.ErrorList{
-				field.Invalid(field.NewPath("spec", "target", "pod", "uid"), "invalid-uid", "must be a lowercase UUID in 8-4-4-4-12 format").WithOrigin("format=k8s-uuid").MarkAlpha(),
+				field.Invalid(field.NewPath("spec", "target", "pod", "uid"), "invalid-uid", "must be a lowercase UUID in 8-4-4-4-12 format").WithOrigin("format=k8s-uuid"),
 				field.Forbidden(field.NewPath("metadata", "name"), "must be the same value as spec.target.pod.uid").MarkFromImperative(),
 			},
 		},
@@ -138,19 +138,19 @@ func testDeclarativeValidate(t *testing.T, apiVersion string) {
 		"too many requesters": {
 			input: mkValidEvictionRequest(101),
 			errors: field.ErrorList{
-				field.TooMany(field.NewPath("spec", "requesters"), 101, 100).WithOrigin("maxItems").MarkAlpha(),
+				field.TooMany(field.NewPath("spec", "requesters"), 101, 100).WithOrigin("maxItems"),
 			},
 		},
 		"duplicate requesters": {
 			input: mkValidEvictionRequest(3, addRequesters("foo.example.com", "foo.example.com")),
 			errors: field.ErrorList{
-				field.Duplicate(field.NewPath("spec", "requesters").Index(4), "").MarkAlpha(),
+				field.Duplicate(field.NewPath("spec", "requesters").Index(4), ""),
 			},
 		},
 		"requester without a name": {
 			input: mkValidEvictionRequest(0, addRequesters("")),
 			errors: field.ErrorList{
-				field.Required(field.NewPath("spec", "requesters").Index(0).Child("name"), "").MarkAlpha(),
+				field.Required(field.NewPath("spec", "requesters").Index(0).Child("name"), ""),
 			},
 		},
 		"invalid requester, 2 segments": {
@@ -208,21 +208,21 @@ func testDeclarativeValidateUpdate(t *testing.T, apiVersion string) {
 			oldInput: mkValidEvictionRequest(1),
 			input:    mkValidEvictionRequest(1, clearTarget()),
 			errors: field.ErrorList{
-				field.Invalid(field.NewPath("spec", "target"), "", validation.FieldImmutableErrorMsg).WithOrigin("immutable").MarkAlpha(),
+				field.Invalid(field.NewPath("spec", "target"), "", validation.FieldImmutableErrorMsg).WithOrigin("immutable").MarkBeta(),
 			},
 		},
 		"change target name": {
 			oldInput: mkValidEvictionRequest(1),
 			input:    mkValidEvictionRequest(1, setTarget("change", valiUIDdName)),
 			errors: field.ErrorList{
-				field.Invalid(field.NewPath("spec", "target"), "", validation.FieldImmutableErrorMsg).WithOrigin("immutable").MarkAlpha(),
+				field.Invalid(field.NewPath("spec", "target"), "", validation.FieldImmutableErrorMsg).WithOrigin("immutable").MarkBeta(),
 			},
 		},
 		"change target uid": {
 			oldInput: mkValidEvictionRequest(1),
 			input:    mkValidEvictionRequest(1, setTarget("bar", "")),
 			errors: field.ErrorList{
-				field.Invalid(field.NewPath("spec", "target"), "", validation.FieldImmutableErrorMsg).WithOrigin("immutable").MarkAlpha(),
+				field.Invalid(field.NewPath("spec", "target"), "", validation.FieldImmutableErrorMsg).WithOrigin("immutable").MarkBeta(),
 			},
 		},
 		"increase requesters in a canceled eviction request": {
@@ -238,7 +238,7 @@ func testDeclarativeValidateUpdate(t *testing.T, apiVersion string) {
 			input:             mkValidEvictionRequest(101),
 			requiresAuthCheck: true,
 			errors: field.ErrorList{
-				field.TooMany(field.NewPath("spec", "requesters"), 101, 100).WithOrigin("maxItems").MarkAlpha(),
+				field.TooMany(field.NewPath("spec", "requesters"), 101, 100).WithOrigin("maxItems"),
 			},
 		},
 		"add a duplicate requesters": {
@@ -246,7 +246,7 @@ func testDeclarativeValidateUpdate(t *testing.T, apiVersion string) {
 			input:             mkValidEvictionRequest(3, addRequesters("foo.example.com", "foo.example.com")),
 			requiresAuthCheck: true,
 			errors: field.ErrorList{
-				field.Duplicate(field.NewPath("spec", "requesters").Index(4), "").MarkAlpha(),
+				field.Duplicate(field.NewPath("spec", "requesters").Index(4), ""),
 			},
 		},
 		"change to a new requester": {
@@ -266,7 +266,7 @@ func testDeclarativeValidateUpdate(t *testing.T, apiVersion string) {
 			input:             mkValidEvictionRequest(0, addRequesters("foo.example.com", "foo.example.com")),
 			requiresAuthCheck: true,
 			errors: field.ErrorList{
-				field.Duplicate(field.NewPath("spec", "requesters").Index(1), "").MarkAlpha(),
+				field.Duplicate(field.NewPath("spec", "requesters").Index(1), ""),
 			},
 		},
 		"add a requester without a name": {
@@ -274,7 +274,7 @@ func testDeclarativeValidateUpdate(t *testing.T, apiVersion string) {
 			input:             mkValidEvictionRequest(1, addRequesters("")),
 			requiresAuthCheck: true,
 			errors: field.ErrorList{
-				field.Required(field.NewPath("spec", "requesters").Index(1).Child("name"), "").MarkAlpha(),
+				field.Required(field.NewPath("spec", "requesters").Index(1).Child("name"), ""),
 			},
 		},
 		"add an invalid requester, 2 segments": {
@@ -360,7 +360,7 @@ func testDeclarativeValidateStatusUpdate(t *testing.T, apiVersion string) {
 			oldInput: mkValidEvictionRequestStatus(0, setObservedGeneration(5)),
 			input:    mkValidEvictionRequestStatus(0, setObservedGeneration(-1)),
 			errors: []*field.Error{
-				field.Invalid(field.NewPath("status", "observedGeneration"), -1, "must be greater than or equal to 0").WithOrigin("minimum").MarkAlpha(),
+				field.Invalid(field.NewPath("status", "observedGeneration"), -1, "must be greater than or equal to 0").WithOrigin("minimum"),
 			},
 		},
 		// all interceptors
@@ -378,7 +378,7 @@ func testDeclarativeValidateStatusUpdate(t *testing.T, apiVersion string) {
 			oldInput: mkValidEvictionRequestStatus(0),
 			input:    mkValidEvictionRequestStatusWithStatuses(17, 0),
 			errors: []*field.Error{
-				field.TooMany(field.NewPath("status", "targetInterceptors"), 17, 16).WithOrigin("maxItems").MarkAlpha(),
+				field.TooMany(field.NewPath("status", "targetInterceptors"), 17, 16).WithOrigin("maxItems"),
 				field.Required(field.NewPath("status", "interceptors"), "").MarkFromImperative(),
 			},
 		},
@@ -386,8 +386,8 @@ func testDeclarativeValidateStatusUpdate(t *testing.T, apiVersion string) {
 			oldInput: mkValidEvictionRequestStatus(0),
 			input:    mkValidEvictionRequestStatus(0, addTargetInterceptors("f.ba.com", "f.ba.com", "", "invalid", "foo.k8s.io", "example.com", "foo.example.com/bar")),
 			errors: []*field.Error{
-				field.Duplicate(field.NewPath("status", "targetInterceptors").Index(1), "").MarkAlpha(),
-				field.Required(field.NewPath("status", "targetInterceptors").Index(2).Child("name"), "").MarkAlpha(),
+				field.Duplicate(field.NewPath("status", "targetInterceptors").Index(1), ""),
+				field.Required(field.NewPath("status", "targetInterceptors").Index(2).Child("name"), ""),
 				field.Invalid(field.NewPath("status", "targetInterceptors").Index(3).Child("name"), "invalid", "should be a domain with at least three segments separated by dots").MarkFromImperative(),
 				field.Invalid(field.NewPath("status", "targetInterceptors").Index(5).Child("name"), "example.com", "should be a domain with at least three segments separated by dots").MarkFromImperative(),
 				field.Invalid(field.NewPath("status", "targetInterceptors").Index(6).Child("name"), "foo.example.com/bar", "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')").MarkFromImperative(),
@@ -452,14 +452,14 @@ func testDeclarativeValidateStatusUpdate(t *testing.T, apiVersion string) {
 			oldInput: mkValidEvictionRequestStatus(0),
 			input:    mkValidEvictionRequestStatus(5, addActiveInterceptorsCount(2)),
 			errors: []*field.Error{
-				field.TooMany(field.NewPath("status", "activeInterceptors"), 2, 1).WithOrigin("maxItems").MarkAlpha(),
+				field.TooMany(field.NewPath("status", "activeInterceptors"), 2, 1).WithOrigin("maxItems"),
 			},
 		},
 		"duplicate activeInterceptors -short circuited by too many": {
 			oldInput: mkValidEvictionRequestStatus(3),
 			input:    mkValidEvictionRequestStatus(3, addActiveInterceptors(interceptorName(0), interceptorName(0))),
 			errors: []*field.Error{
-				field.TooMany(field.NewPath("status", "activeInterceptors"), 2, 1).WithOrigin("maxItems").MarkAlpha(),
+				field.TooMany(field.NewPath("status", "activeInterceptors"), 2, 1).WithOrigin("maxItems"),
 			},
 		},
 		"invalid activeInterceptors": {
@@ -534,7 +534,7 @@ func testDeclarativeValidateStatusUpdate(t *testing.T, apiVersion string) {
 				setInterceptorsStartTime(clock, 0, 16),
 				setInterceptorsCompletionTime(clock, 0, 16)),
 			errors: []*field.Error{
-				field.TooMany(field.NewPath("status", "processedInterceptors"), 17, 16).WithOrigin("maxItems").MarkAlpha(),
+				field.TooMany(field.NewPath("status", "processedInterceptors"), 17, 16).WithOrigin("maxItems"),
 			},
 		},
 		"duplicate processedInterceptors": {
@@ -546,7 +546,7 @@ func testDeclarativeValidateStatusUpdate(t *testing.T, apiVersion string) {
 				addProcessedInterceptors(interceptorName(0), interceptorName(0)),
 				setInterceptorsFullStatus(clock, clock2, 0, 1)),
 			errors: []*field.Error{
-				field.Duplicate(field.NewPath("status", "processedInterceptors").Index(1), "").MarkAlpha(),
+				field.Duplicate(field.NewPath("status", "processedInterceptors").Index(1), ""),
 				field.Forbidden(field.NewPath("status", "processedInterceptors").Index(1), "is immutable because a \"status.interceptors[1]\" does not have a matching name").MarkFromImperative(),
 			},
 		},
@@ -680,7 +680,7 @@ func testDeclarativeValidateStatusUpdate(t *testing.T, apiVersion string) {
 			oldInput: mkValidEvictionRequestStatusWithStatuses(17, 16),
 			input:    mkValidEvictionRequestStatus(17),
 			errors: []*field.Error{
-				field.TooMany(field.NewPath("status", "interceptors"), 17, 16).WithOrigin("maxItems").MarkAlpha(),
+				field.TooMany(field.NewPath("status", "interceptors"), 17, 16).WithOrigin("maxItems"),
 			},
 		},
 		// "duplicate status interceptors ": short circuited by targetInterceptors key order
@@ -719,7 +719,7 @@ func testDeclarativeValidateStatusUpdate(t *testing.T, apiVersion string) {
 			input: mkValidEvictionRequestStatus(2,
 				addActiveInterceptorsCount(1)),
 			errors: []*field.Error{
-				field.Invalid(field.NewPath("status", "interceptors").Index(0).Child("startTime"), nil, "field cannot be modified once set").WithOrigin("update").MarkAlpha(),
+				field.Invalid(field.NewPath("status", "interceptors").Index(0).Child("startTime"), nil, "field cannot be modified once set").WithOrigin("update").MarkBeta(),
 			},
 		},
 		"startTime cannot be changed once set": {
@@ -730,7 +730,7 @@ func testDeclarativeValidateStatusUpdate(t *testing.T, apiVersion string) {
 				addActiveInterceptorsCount(1),
 				setInterceptorsStartTime(clockAfter(15*time.Second), 0, 1)),
 			errors: []*field.Error{
-				field.Invalid(field.NewPath("status", "interceptors").Index(0).Child("startTime"), nil, "field cannot be modified once set").WithOrigin("update").MarkAlpha(),
+				field.Invalid(field.NewPath("status", "interceptors").Index(0).Child("startTime"), nil, "field cannot be modified once set").WithOrigin("update").MarkBeta(),
 			},
 		},
 		"startTime is required for an active interceptor": {
@@ -880,7 +880,7 @@ func testDeclarativeValidateStatusUpdate(t *testing.T, apiVersion string) {
 				setInterceptorsStartTime(clock, 0, 1),
 				setInterceptorsCompletionTime(clockAfter(4*time.Minute), 0, 1)),
 			errors: []*field.Error{
-				field.Invalid(field.NewPath("status", "interceptors").Index(0).Child("completionTime"), nil, "field cannot be modified once set").WithOrigin("update").MarkAlpha(),
+				field.Invalid(field.NewPath("status", "interceptors").Index(0).Child("completionTime"), nil, "field cannot be modified once set").WithOrigin("update").MarkBeta(),
 			},
 		},
 		"completionTime cannot be removed once set": {
@@ -892,7 +892,7 @@ func testDeclarativeValidateStatusUpdate(t *testing.T, apiVersion string) {
 				addActiveInterceptorsCount(1),
 				setInterceptorsStartTime(clock, 0, 1)),
 			errors: []*field.Error{
-				field.Invalid(field.NewPath("status", "interceptors").Index(0).Child("completionTime"), nil, "field cannot be cleared once set").WithOrigin("update").MarkAlpha(),
+				field.Invalid(field.NewPath("status", "interceptors").Index(0).Child("completionTime"), nil, "field cannot be cleared once set").WithOrigin("update").MarkBeta(),
 			},
 		},
 		"completionTime cannot be set before startTime is set": {
@@ -958,7 +958,7 @@ func testDeclarativeValidateStatusUpdate(t *testing.T, apiVersion string) {
 				setInterceptorsHeartBeatTime(clock, 0, 1),
 				setInterceptorsMessage(0, 1, strings.Repeat("a", 4000))),
 			errors: []*field.Error{
-				field.TooLongCharacters(field.NewPath("status", "interceptors").Index(0).Child("message"), "", 4000).WithOrigin("maxLength").MarkAlpha(),
+				field.TooLongCharacters(field.NewPath("status", "interceptors").Index(0).Child("message"), "", 4000).WithOrigin("maxLength").MarkBeta(),
 			},
 		},
 		// conditions
@@ -966,14 +966,14 @@ func testDeclarativeValidateStatusUpdate(t *testing.T, apiVersion string) {
 			oldInput: mkValidEvictionRequestStatus(0),
 			input:    mkValidEvictionRequestStatus(0, addConditionsCount(clock, 1001)),
 			errors: []*field.Error{
-				field.TooMany(field.NewPath("status", "conditions"), 1001, 1000).WithOrigin("maxItems").MarkAlpha(),
+				field.TooMany(field.NewPath("status", "conditions"), 1001, 1000).WithOrigin("maxItems"),
 			},
 		},
 		"duplicate condition": {
 			oldInput: mkValidEvictionRequestStatus(1),
 			input:    mkValidEvictionRequestStatus(1, addCondition(clock, coordination.EvictionRequestConditionEvicted, true), addCondition(clock, coordination.EvictionRequestConditionEvicted, true)),
 			errors: []*field.Error{
-				field.Duplicate(field.NewPath("status", "conditions").Index(1), "").MarkAlpha(),
+				field.Duplicate(field.NewPath("status", "conditions").Index(1), ""),
 			},
 		},
 		"add invalid condition": {
